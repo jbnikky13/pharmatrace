@@ -1,0 +1,212 @@
+{
+  "address": "4rJojVK6QajDMFy14dpyKomvjJp3DLhkNHRpB1gygY7e",
+  "metadata": {
+    "name": "pharmatrace",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Created with Anchor"
+  },
+  "instructions": [
+    {
+      "name": "flag_counterfeit",
+      "discriminator": [
+        163,
+        250,
+        215,
+        167,
+        15,
+        108,
+        102,
+        121
+      ],
+      "accounts": [
+        {
+          "name": "drug_record",
+          "writable": true
+        },
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "register_drug",
+      "discriminator": [
+        187,
+        221,
+        122,
+        67,
+        121,
+        235,
+        114,
+        91
+      ],
+      "accounts": [
+        {
+          "name": "drug_record",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  100,
+                  114,
+                  117,
+                  103
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "batch_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "batch_id",
+          "type": "string"
+        },
+        {
+          "name": "drug_name",
+          "type": "string"
+        },
+        {
+          "name": "manufacturer",
+          "type": "string"
+        },
+        {
+          "name": "manufacture_date",
+          "type": "string"
+        },
+        {
+          "name": "expiry_date",
+          "type": "string"
+        },
+        {
+          "name": "quantity",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "transfer_drug",
+      "discriminator": [
+        65,
+        172,
+        199,
+        187,
+        238,
+        197,
+        63,
+        103
+      ],
+      "accounts": [
+        {
+          "name": "drug_record",
+          "writable": true
+        },
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "new_holder"
+        }
+      ],
+      "args": [
+        {
+          "name": "new_status",
+          "type": "u8"
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "DrugRecord",
+      "discriminator": [
+        114,
+        139,
+        206,
+        169,
+        213,
+        69,
+        220,
+        15
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "Unauthorized",
+      "msg": "Only the current holder can transfer this drug record"
+    }
+  ],
+  "types": [
+    {
+      "name": "DrugRecord",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "batch_id",
+            "type": "string"
+          },
+          {
+            "name": "drug_name",
+            "type": "string"
+          },
+          {
+            "name": "manufacturer",
+            "type": "string"
+          },
+          {
+            "name": "manufacture_date",
+            "type": "string"
+          },
+          {
+            "name": "expiry_date",
+            "type": "string"
+          },
+          {
+            "name": "quantity",
+            "type": "u64"
+          },
+          {
+            "name": "current_holder",
+            "type": "pubkey"
+          },
+          {
+            "name": "status",
+            "type": "u8"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          },
+          {
+            "name": "authority",
+            "type": "pubkey"
+          }
+        ]
+      }
+    }
+  ]
+}
