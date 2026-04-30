@@ -8,9 +8,9 @@ import idl from "./idl/pharmatrace.json";
 const PROGRAM_ID = new PublicKey("4rJojVK6QajDMFyi4dpyKomvjJp3DLhkNHRpBigygY7e");
 
 const SAMPLE_DRUGS = [
-  { batchId: "04-2220-AMX-2026", drugName: "Amoxicillin 500mg Capsules", manufacturer: "Emzor Pharmaceuticals Ltd", manufactureDate: "2026-01-10", expiryDate: "2028-01-10", quantity: "50000" },
-  { batchId: "04-0829-PCT-2026", drugName: "Paracetamol 500mg Tablets", manufacturer: "May & Baker Nigeria Plc", manufactureDate: "2026-02-01", expiryDate: "2028-02-01", quantity: "100000" },
-  { batchId: "04-5318-CTM-2026", drugName: "Coartem 20/120mg Tablets", manufacturer: "Novartis Nigeria Ltd", manufactureDate: "2026-01-15", expiryDate: "2027-01-15", quantity: "25000" },
+  { batchId: "AMX-04-2220", drugName: "Amoxicillin 500mg Capsules", manufacturer: "Emzor Pharmaceuticals Ltd", manufactureDate: "2026-01-10", expiryDate: "2028-01-10", quantity: "50000" },
+  { batchId: "PCT-04-0829", drugName: "Paracetamol 500mg Tablets", manufacturer: "May & Baker Nigeria Plc", manufactureDate: "2026-02-01", expiryDate: "2028-02-01", quantity: "100000" },
+  { batchId: "CTM-04-5318", drugName: "Coartem 20/120mg Tablets", manufacturer: "Novartis Nigeria Ltd", manufactureDate: "2026-01-15", expiryDate: "2027-01-15", quantity: "25000" },
 ];
 
 const statusMap: Record<number, string> = {
@@ -141,7 +141,7 @@ export default function App() {
             <input
               value={lookupId}
               onChange={e => setLookupId(e.target.value)}
-              placeholder="e.g. 04-2220-AMX-2026"
+              placeholder="e.g. AMX-04-2220"
               style={{
                 width: "100%", padding: 14, background: "#1e293b",
                 border: "1px solid #334155", borderRadius: 8,
@@ -228,7 +228,7 @@ export default function App() {
             </div>
 
             {[
-              ["batchId", "Batch ID (e.g. 04-2220-AMX-2026)"],
+              ["batchId", "Batch ID (e.g. AMX-04-2220)"],
               ["drugName", "Drug Name (e.g. Amoxicillin 500mg)"],
               ["manufacturer", "Manufacturer"],
               ["manufactureDate", "Manufacture Date (YYYY-MM-DD)"],
