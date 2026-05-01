@@ -42,7 +42,7 @@ export default function App() {
     try {
       const program = getProgram();
       const [pda] = PublicKey.findProgramAddressSync(
-        [Buffer.from("drug"), Buffer.from(lookupId.trim())],
+        [Buffer.from(lookupId.trim())],
         PROGRAM_ID
       );
       const record = await (program.account as any).drugRecord.fetch(pda);
@@ -61,7 +61,7 @@ export default function App() {
       const program = getProgram();
       const batchId = form.batchId.trim();
       const [pda] = PublicKey.findProgramAddressSync(
-        [Buffer.from("drug"), Buffer.from(batchId)],
+        [Buffer.from(batchId)],
         PROGRAM_ID
       );
       const tx = await program.methods
