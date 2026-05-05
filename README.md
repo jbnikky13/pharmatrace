@@ -1,4 +1,3 @@
-cat > README.md << 'ENDOFFILE'
 # 💊 PharmaTrace
 
 > Blockchain-powered drug authentication for Nigeria — built on Solana.
