@@ -28,17 +28,23 @@ export const registryAbi = [
   {type:"function",name:"getBatchHistory",stateMutability:"view",inputs:[{name:"batchId",type:"string"}],outputs:[{name:"history",type:"tuple[]",components:[{name:"status",type:"uint8"},{name:"actor",type:"address"},{name:"timestamp",type:"uint256"},{name:"reason",type:"string"}]}]},
 ] as const;
 
+function getBrowserProvider(): any {
+  const provider = window.ethereum;
+  if (!provider) throw new Error("No EVM wallet detected. Install MetaMask or another EVM wallet.");
+  return provider;
+}
+
 export async function connectArcWallet(): Promise<Address> {
-  if (!window.ethereum) throw new Error("No EVM wallet detected. Install MetaMask or another EVM wallet.");
-  const client = createWalletClient({chain: arc, transport: custom(window.ethereum)});
+  const provider = getBrowserProvider();
+  const client = createWalletClient({chain: arc, transport: custom(provider as any)});
   const [account] = await client.requestAddresses();
   const chainId = await client.getChainId();
   if (chainId !== arc.id) {
     try {
-      await window.ethereum.request({method:"wallet_switchEthereumChain",params:[{chainId:"0x13b2"}]});
+      await provider.request({method:"wallet_switchEthereumChain",params:[{chainId:"0x13b2"}]});
     } catch (switchError: any) {
       if (switchError?.code !== 4902) throw switchError;
-      await window.ethereum.request({
+      await provider.request({
         method:"wallet_addEthereumChain",
         params:[{
           chainId:"0x13b2",
@@ -48,16 +54,16 @@ export async function connectArcWallet(): Promise<Address> {
           blockExplorerUrls:["https://explorer.arc.io"]
         }]
       });
-      await window.ethereum.request({method:"wallet_switchEthereumChain",params:[{chainId:"0x13b2"}]});
+      await provider.request({method:"wallet_switchEthereumChain",params:[{chainId:"0x13b2"}]});
     }
   }
   return account;
 }
 
 export async function writeRegistry(functionName: string, args: readonly unknown[]) {
-  if (!window.ethereum) throw new Error("No EVM wallet detected.");
+  const provider = getBrowserProvider();
   if (!PHARMATRACE_ADDRESS) throw new Error("VITE_PHARMATRACE_ADDRESS is not configured.");
-  const walletClient = createWalletClient({chain:arc,transport:custom(window.ethereum)});
+  const walletClient = createWalletClient({chain:arc,transport:custom(provider as any)});
   const [account] = await walletClient.requestAddresses();
   return walletClient.writeContract({address:PHARMATRACE_ADDRESS,abi:registryAbi,functionName:functionName as any,args:args as any,account,chain:arc});
 }
