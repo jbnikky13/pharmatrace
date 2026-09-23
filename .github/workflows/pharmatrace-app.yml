@@ -1,0 +1,27 @@
+name: PharmaTrace Frontend
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "pharmatrace/app/**"
+      - ".github/workflows/pharmatrace-app.yml"
+  pull_request:
+    paths:
+      - "pharmatrace/app/**"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: pharmatrace/app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: pharmatrace/app/package-lock.json
+      - run: npm install
+      - run: npm run build
