@@ -1,9 +1,7 @@
 import { useState } from "react";
-import { useConnection, useWallet } from "@solana/wallet-adapter-react";
-import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
-import { Transaction, SystemProgram } from "@solana/web3.js";
-
-const CHAIN_REGISTRY: Record<string, any> = {};
+import { createPublicClient, createWalletClient, custom, http, parseUnits, type Address } from "viem";
+import { arc } from "viem/chains";
+import { ARC_USDC, PHARMATRACE_ADDRESS, explorerContract, explorerTx, registryAbi } from "./arc";
 
 const SAMPLES = [
   { batchId: "NAFDAC04-2220", drugName: "Amoxicillin 500mg Capsules", manufacturer: "Emzor Pharmaceuticals Ltd", manufactureDate: "2026-01-10", expiryDate: "2028-01-10", quantity: "50000" },
@@ -11,169 +9,147 @@ const SAMPLES = [
   { batchId: "NAFDAC04-5318", drugName: "Coartem 20/120mg Tablets", manufacturer: "Novartis Nigeria Ltd", manufactureDate: "2026-01-15", expiryDate: "2027-01-15", quantity: "25000" },
 ];
 
+const publicClient = createPublicClient({
+  chain: arc,
+  transport: http(import.meta.env.VITE_ARC_RPC_URL || "https://rpc.mainnet.arc.io"),
+});
+
+const statusMap: Record<number, string> = {
+  1: "🏭 Manufactured", 2: "🚚 In Distribution", 3: "🏥 At Pharmacy",
+  4: "✅ Dispensed", 99: "🚨 Flagged",
+};
+
 export default function App() {
-  const { connection } = useConnection();
-  const wallet = useWallet();
-  const [tab, setTab] = useState<"verify"|"register">("verify");
+  const [tab, setTab] = useState<"verify" | "register">("verify");
   const [lookupId, setLookupId] = useState("");
   const [result, setResult] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [account, setAccount] = useState<Address | null>(null);
   const [form, setForm] = useState(SAMPLES[0]);
-  const [txSig, setTxSig] = useState("");
+  const [error, setError] = useState("");
+
+  async function connectWallet() {
+    setError("");
+    try {
+      if (!window.ethereum) throw new Error("Install MetaMask or another EVM wallet.");
+      const walletClient = createWalletClient({ chain: arc, transport: custom(window.ethereum) });
+      const [address] = await walletClient.requestAddresses();
+      const chainId = await walletClient.getChainId();
+      if (chainId !== arc.id) {
+        await window.ethereum.request({ method: "wallet_switchEthereumChain", params: [{ chainId: "0x13a2" }] });
+      }
+      setAccount(address);
+    } catch (e: any) {
+      setError(e?.shortMessage || e?.message || "Wallet connection failed.");
+    }
+  }
 
   async function handleVerify() {
-    setLoading(true);
-    setResult(null);
-    await new Promise(r => setTimeout(r, 1200));
-    const record = CHAIN_REGISTRY[lookupId.trim()];
-    setResult(record ? { type: "found", data: record } : { type: "notfound" });
-    setLoading(false);
+    setLoading(true); setError(""); setResult(null);
+    try {
+      if (!PHARMATRACE_ADDRESS) throw new Error("The deployed PharmaTrace contract address is not configured.");
+      const batch = await publicClient.readContract({
+        address: PHARMATRACE_ADDRESS, abi: registryAbi, functionName: "getBatch", args: [lookupId.trim()],
+      });
+      const exists = (batch as any).exists;
+      setResult(exists ? { type: "found", data: batch } : { type: "notfound" });
+    } catch (e: any) {
+      setError(e?.shortMessage || e?.message || "Blockchain lookup failed.");
+    } finally { setLoading(false); }
   }
 
   async function handleRegister() {
-    if (!wallet.publicKey) return;
-    setLoading(true);
-    setTxSig("");
+    setLoading(true); setError(""); setResult(null);
     try {
-      const tx = new Transaction().add(
-        SystemProgram.transfer({
-          fromPubkey: wallet.publicKey,
-          toPubkey: wallet.publicKey,
-          lamports: 100,
-        })
-      );
-      const { blockhash } = await connection.getLatestBlockhash();
-      tx.recentBlockhash = blockhash;
-      tx.feePayer = wallet.publicKey;
-      const signed = await wallet.signTransaction!(tx);
-      const sig = await connection.sendRawTransaction(signed.serialize());
-      const batchId = form.batchId.trim();
-      CHAIN_REGISTRY[batchId] = {
-        ...form,
-        status: 1,
-        authority: wallet.publicKey.toString(),
-        txSignature: sig,
-        registeredAt: new Date().toISOString(),
-      };
-      setTxSig(sig);
-      setResult({ type: "registered", batchId });
+      if (!PHARMATRACE_ADDRESS) throw new Error("Deploy the contract and set VITE_PHARMATRACE_ADDRESS first.");
+      if (!window.ethereum) throw new Error("Install MetaMask or another EVM wallet.");
+      const walletClient = createWalletClient({ chain: arc, transport: custom(window.ethereum) });
+      const [address] = await walletClient.requestAddresses();
+      const chainId = await walletClient.getChainId();
+      if (chainId !== arc.id) {
+        await window.ethereum.request({ method: "wallet_switchEthereumChain", params: [{ chainId: "0x13a2" }] });
+      }
+      const authorized = await publicClient.readContract({
+        address: PHARMATRACE_ADDRESS, abi: registryAbi, functionName: "authorizedRegistrars", args: [address],
+      });
+      if (!authorized) throw new Error("This wallet is not an authorized manufacturer/registrar.");
+      const tx = await walletClient.writeContract({
+        address: PHARMATRACE_ADDRESS, abi: registryAbi, functionName: "registerBatch",
+        args: [form.batchId.trim(), form.drugName, form.manufacturer, form.manufactureDate, form.expiryDate, BigInt(form.quantity)],
+        account: address, chain: arc,
+      });
+      await publicClient.waitForTransactionReceipt({ hash: tx });
+      setResult({ type: "registered", tx });
+      setLookupId(form.batchId);
     } catch (e: any) {
-      alert("Error: " + e.message);
-    }
-    setLoading(false);
+      setError(e?.shortMessage || e?.message || "Registration failed.");
+    } finally { setLoading(false); }
   }
 
-  const statusMap: Record<number, string> = {
-    1: "🏭 Manufactured", 2: "🚚 In Distribution",
-    3: "🏥 At Pharmacy", 4: "✅ Dispensed", 99: "🚨 FLAGGED"
-  };
-
   return (
-    <div style={{ minHeight: "100vh", background: "#0a0a1a", color: "#e2e8f0", fontFamily: "monospace", padding: 20 }}>
-      <div style={{ maxWidth: 700, margin: "0 auto" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <span style={{ fontSize: 28 }}>💊</span>
-            <h1 style={{ color: "#14F195", margin: 0, fontSize: 24 }}>PharmaTrace</h1>
-          </div>
-          <WalletMultiButton />
-        </div>
-        <p style={{ color: "#64748b", marginBottom: 24, fontSize: 12 }}>Drug Supply Chain Verification · Solana Devnet · Nigeria</p>
-
-        <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
-          {(["verify", "register"] as const).map(t => (
-            <button key={t} onClick={() => { setTab(t); setResult(null); }} style={{
-              padding: "10px 24px", borderRadius: 8, border: "none", cursor: "pointer",
-              fontFamily: "monospace", fontWeight: "bold", fontSize: 13,
-              background: tab === t ? "#14F195" : "#1e293b", color: tab === t ? "#000" : "#94a3b8"
-            }}>{t === "verify" ? "🔍 Verify Drug" : "📝 Register"}</button>
-          ))}
-        </div>
-
-        {tab === "verify" && (
+    <div style={{ minHeight: "100vh", background: "#07111f", color: "#e2e8f0", fontFamily: "Inter, system-ui, sans-serif", padding: 20 }}>
+      <div style={{ maxWidth: 760, margin: "0 auto" }}>
+        <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16, marginBottom: 8 }}>
           <div>
-            <p style={{ color: "#94a3b8", fontSize: 13, marginBottom: 12 }}>Enter NAFDAC batch ID to verify:</p>
-            <div style={{ marginBottom: 12 }}>
-              <div style={{ fontSize: 11, color: "#64748b", marginBottom: 6 }}>TRY A SAMPLE (register first):</div>
-              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                {SAMPLES.map(d => (
-                  <button key={d.batchId} onClick={() => setLookupId(d.batchId)} style={{
-                    padding: "4px 10px", fontSize: 11, background: "#1e293b",
-                    border: "1px solid #334155", borderRadius: 6, color: "#94a3b8", cursor: "pointer", fontFamily: "monospace"
-                  }}>{d.batchId}</button>
-                ))}
-              </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <span style={{ fontSize: 30 }}>💊</span>
+              <h1 style={{ color: "#14F195", margin: 0, fontSize: 25 }}>PharmaTrace</h1>
             </div>
-            <input value={lookupId} onChange={e => setLookupId(e.target.value)} placeholder="e.g. NAFDAC04-2220"
-              style={{ width: "100%", padding: 14, background: "#1e293b", border: "1px solid #334155", borderRadius: 8, color: "#e2e8f0", fontFamily: "monospace", fontSize: 14, boxSizing: "border-box", marginBottom: 12 }} />
-            <button onClick={handleVerify} disabled={loading || !lookupId.trim()} style={{
-              width: "100%", padding: 14, background: loading ? "#1e293b" : "#14F195", border: "none", borderRadius: 8,
-              fontWeight: "bold", fontFamily: "monospace", fontSize: 15, cursor: loading ? "not-allowed" : "pointer", marginBottom: 16, color: loading ? "#64748b" : "#000"
-            }}>{loading ? "⏳ Querying Solana..." : "Verify on Blockchain"}</button>
-
-            {result?.type === "found" && (
-              <div style={{ padding: 20, background: "#0f2a1a", border: "2px solid #14F195", borderRadius: 12 }}>
-                <h3 style={{ color: "#14F195", margin: "0 0 16px" }}>✅ Verified on Solana Blockchain</h3>
-                {[["Drug Name", result.data.drugName], ["Batch ID", result.data.batchId],
-                  ["Manufacturer", result.data.manufacturer], ["Manufacture Date", result.data.manufactureDate],
-                  ["Expiry Date", result.data.expiryDate], ["Quantity", result.data.quantity + " units"],
-                  ["Status", statusMap[result.data.status] || "Unknown"],
-                  ["TX Signature", result.data.txSignature?.slice(0,20) + "..."],
-                ].map(([k, v]) => (
-                  <div key={k} style={{ display: "flex", borderBottom: "1px solid #1e3a2a", padding: "8px 0" }}>
-                    <span style={{ width: 160, color: "#64748b", fontSize: 12 }}>{k}</span>
-                    <span style={{ fontSize: 13 }}>{v}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-            {result?.type === "notfound" && (
-              <div style={{ padding: 20, background: "#2a0a0a", border: "2px solid #ef4444", borderRadius: 12, textAlign: "center" }}>
-                <div style={{ fontSize: 48, marginBottom: 8 }}>🚨</div>
-                <h3 style={{ color: "#ef4444", margin: "0 0 8px" }}>NOT FOUND ON BLOCKCHAIN</h3>
-                <p style={{ color: "#fca5a5", margin: "0 0 12px" }}>This drug may be <strong>counterfeit</strong>.</p>
-                <p style={{ color: "#fca5a5", margin: 0, fontSize: 13 }}>Report to NAFDAC: <strong>0800-233-9234</strong></p>
-              </div>
-            )}
+            <p style={{ color: "#94a3b8", margin: "5px 0 0", fontSize: 12 }}>Drug provenance + USDC settlement · Arc Mainnet</p>
           </div>
-        )}
+          <button onClick={connectWallet} style={{ padding: "10px 14px", borderRadius: 9, border: "1px solid #334155", background: "#172033", color: "#fff", cursor: "pointer" }}>
+            {account ? account.slice(0, 6) + "…" + account.slice(-4) : "Connect Wallet"}
+          </button>
+        </header>
 
-        {tab === "register" && (
-          <div>
-            {!wallet.connected && <div style={{ padding: 12, background: "#1e293b", border: "1px solid #f59e0b", borderRadius: 8, marginBottom: 16 }}>
-              <p style={{ color: "#f59e0b", margin: 0, fontSize: 13 }}>⚠️ Connect your Phantom wallet first</p>
-            </div>}
-            <div style={{ marginBottom: 16 }}>
-              <div style={{ fontSize: 11, color: "#64748b", marginBottom: 6 }}>LOAD SAMPLE:</div>
-              <div style={{ display: "flex", gap: 6 }}>
-                {SAMPLES.map((d, i) => (
-                  <button key={i} onClick={() => setForm(d)} style={{ padding: "4px 10px", fontSize: 11, background: "#1e293b", border: "1px solid #334155", borderRadius: 6, color: "#94a3b8", cursor: "pointer", fontFamily: "monospace" }}>{d.drugName.split(" ")[0]}</button>
-                ))}
-              </div>
-            </div>
-            {[["batchId","Batch ID"],["drugName","Drug Name"],["manufacturer","Manufacturer"],["manufactureDate","Manufacture Date (YYYY-MM-DD)"],["expiryDate","Expiry Date (YYYY-MM-DD)"],["quantity","Quantity (units)"]].map(([field, label]) => (
-              <div key={field} style={{ marginBottom: 8 }}>
-                <div style={{ fontSize: 10, color: "#64748b", marginBottom: 4, textTransform: "uppercase" }}>{label}</div>
-                <input value={(form as any)[field]} onChange={e => setForm(f => ({ ...f, [field]: e.target.value }))}
-                  style={{ width: "100%", padding: 12, background: "#1e293b", border: "1px solid #334155", borderRadius: 8, color: "#e2e8f0", fontFamily: "monospace", fontSize: 13, boxSizing: "border-box" }} />
-              </div>
-            ))}
-            <button onClick={handleRegister} disabled={loading || !wallet.connected} style={{
-              width: "100%", padding: 14, marginTop: 8,
-              background: loading ? "#1e293b" : "#9945FF", border: "none", borderRadius: 8,
-              color: loading ? "#64748b" : "white", fontWeight: "bold", fontFamily: "monospace", fontSize: 15,
-              cursor: (!wallet.connected || loading) ? "not-allowed" : "pointer"
-            }}>{loading ? "⏳ Signing transaction..." : "Register on Solana Blockchain"}</button>
-            {txSig && (
-              <div style={{ marginTop: 16, padding: 12, background: "#0f2a1a", border: "1px solid #14F195", borderRadius: 8 }}>
-                <div style={{ color: "#14F195", fontWeight: "bold", marginBottom: 4 }}>✅ Registered! Real Solana TX signed.</div>
-                <div style={{ fontSize: 11, color: "#64748b" }}>TX: {txSig.slice(0,30)}...</div>
-                <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 8 }}>Now verify: <strong style={{ color: "#14F195" }}>{result?.batchId}</strong></div>
-              </div>
-            )}
+        <div style={{ margin: "18px 0", padding: 12, borderRadius: 10, background: "#0d1b2d", border: "1px solid #20324b", fontSize: 12 }}>
+          <strong style={{ color: "#14F195" }}>Arc Mainnet</strong> · Chain ID 5042 · Native gas: USDC
+          {PHARMATRACE_ADDRESS && <a href={explorerContract()} target="_blank" rel="noreferrer" style={{ marginLeft: 12, color: "#7dd3fc" }}>Contract ↗</a>}
+        </div>
+
+        <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
+          <button onClick={() => { setTab("verify"); setResult(null); }} style={tabButton(tab === "verify")}>🔍 Verify Drug</button>
+          <button onClick={() => { setTab("register"); setResult(null); }} style={tabButton(tab === "register")}>📝 Register Batch</button>
+        </div>
+
+        {error && <div style={{ padding: 14, marginBottom: 16, background: "#35151a", border: "1px solid #7f1d1d", borderRadius: 10, color: "#fecaca" }}>{error}</div>}
+
+        {tab === "verify" && <section>
+          <p style={{ color: "#94a3b8" }}>Enter a NAFDAC batch ID and read the record directly from the Arc contract.</p>
+          <div style={{ display: "flex", gap: 7, flexWrap: "wrap", marginBottom: 10 }}>
+            {SAMPLES.map(s => <button key={s.batchId} onClick={() => setLookupId(s.batchId)} style={chip}>{s.batchId}</button>)}
           </div>
-        )}
+          <input value={lookupId} onChange={e => setLookupId(e.target.value)} placeholder="e.g. NAFDAC04-2220" style={input} />
+          <button onClick={handleVerify} disabled={loading || !lookupId.trim()} style={primary}>{loading ? "Reading Arc…" : "Verify on Arc"}</button>
+
+          {result?.type === "found" && <div style={card("#0f2a1a", "#14F195")}>
+            <h3 style={{ color: "#14F195", marginTop: 0 }}>✅ Batch verified on Arc</h3>
+            <Row k="Drug" v={result.data.drugName} /><Row k="Batch ID" v={result.data.batchId} />
+            <Row k="Manufacturer" v={result.data.manufacturer} /><Row k="Manufactured" v={result.data.manufactureDate} />
+            <Row k="Expiry" v={result.data.expiryDate} /><Row k="Quantity" v={result.data.quantity.toString() + " units"} />
+            <Row k="Status" v={statusMap[Number(result.data.status)] || "Unknown"} />
+            <Row k="Custodian" v={result.data.custodian} />
+          </div>}
+          {result?.type === "notfound" && <div style={card("#2a0a0a", "#ef4444")}><h3 style={{ color: "#ef4444", marginTop: 0 }}>🚨 No batch record found</h3><p>This lookup did not find a registered batch on the PharmaTrace Arc contract. That alone does not establish that a medicine is counterfeit; verify the packaging, seller, and regulatory information before taking action.</p></div>}
+        </section>}
+
+        {tab === "register" && <section>
+          <p style={{ color: "#94a3b8" }}>Authorized manufacturers can register a new pharmaceutical batch on Arc.</p>
+          {Object.entries({batchId:"Batch ID",drugName:"Drug Name",manufacturer:"Manufacturer",manufactureDate:"Manufacture Date",expiryDate:"Expiry Date",quantity:"Quantity"}).map(([field,label]) =>
+            <div key={field} style={{ marginBottom: 9 }}><label style={{ display:"block",fontSize:11,color:"#64748b",marginBottom:4 }}>{label}</label>
+              <input value={(form as any)[field]} onChange={e => setForm(f => ({...f,[field]:e.target.value}))} style={input} /></div>
+          )}
+          <button onClick={handleRegister} disabled={loading || !account} style={primary}>{loading ? "Confirming on Arc…" : account ? "Register Batch on Arc" : "Connect Wallet First"}</button>
+          {result?.type === "registered" && <div style={card("#0f2a1a","#14F195")}><h3 style={{ color:"#14F195",marginTop:0 }}>✅ Batch registered</h3><a href={explorerTx(result.tx)} target="_blank" rel="noreferrer" style={{color:"#7dd3fc"}}>View Arc transaction ↗</a></div>}
+        </section>}
       </div>
     </div>
   );
 }
+
+const input: React.CSSProperties = { width:"100%",padding:13,background:"#111c2e",border:"1px solid #334155",borderRadius:8,color:"#e2e8f0",boxSizing:"border-box",marginBottom:10,fontSize:14 };
+const primary: React.CSSProperties = { width:"100%",padding:14,background:"#14F195",color:"#03100a",border:0,borderRadius:9,fontWeight:800,cursor:"pointer",fontSize:14 };
+const chip: React.CSSProperties = { padding:"5px 9px",fontSize:11,background:"#172033",border:"1px solid #334155",borderRadius:6,color:"#94a3b8",cursor:"pointer" };
+const tabButton = (active:boolean): React.CSSProperties => ({padding:"10px 20px",borderRadius:8,border:0,cursor:"pointer",fontWeight:700,background:active?"#14F195":"#172033",color:active?"#03100a":"#94a3b8"});
+const card = (background:string,border:string): React.CSSProperties => ({marginTop:18,padding:20,background,border:"2px solid "+border,borderRadius:12});
+function Row({k,v}:{k:string,v:string}) { return <div style={{display:"flex",gap:16,borderBottom:"1px solid #203329",padding:"8px 0"}}><span style={{width:125,color:"#64748b",fontSize:12}}>{k}</span><span style={{fontSize:13,wordBreak:"break-all"}}>{v}</span></div>; }
