@@ -47,6 +47,7 @@ contract PharmaTrace {
     }
 
     function setRegistrar(address account, bool authorized) external onlyOwner {
+        require(account != address(0), "INVALID_REGISTRAR");
         authorizedRegistrars[account] = authorized;
         emit RegistrarUpdated(account, authorized);
     }
