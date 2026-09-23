@@ -11,11 +11,31 @@ const SAMPLES = [
 const publicClient=createPublicClient({chain:arc,transport:http(import.meta.env.VITE_ARC_RPC_URL||"https://rpc.mainnet.arc.io")});
 const statusMap:Record<number,string>={1:"🏭 Manufactured",2:"🚚 In Distribution",3:"🏥 At Pharmacy",4:"✅ Dispensed",99:"🚨 Flagged"};
 
+async function ensureArcNetwork() {
+  if (!window.ethereum) throw new Error("No EVM wallet detected.");
+  try {
+    await window.ethereum.request({method:"wallet_switchEthereumChain",params:[{chainId:"0x13b2"}]});
+  } catch (e:any) {
+    if (e?.code !== 4902) throw e;
+    await window.ethereum.request({
+      method:"wallet_addEthereumChain",
+      params:[{
+        chainId:"0x13b2",
+        chainName:"Arc Mainnet",
+        nativeCurrency:{name:"USDC",symbol:"USDC",decimals:6},
+        rpcUrls:[import.meta.env.VITE_ARC_RPC_URL || "https://rpc.mainnet.arc.io"],
+        blockExplorerUrls:["https://explorer.arc.io"]
+      }]
+    });
+    await window.ethereum.request({method:"wallet_switchEthereumChain",params:[{chainId:"0x13b2"}]});
+  }
+}
+
 export default function App(){
  const [tab,setTab]=useState<"verify"|"register">("verify"),[lookupId,setLookupId]=useState(""),[result,setResult]=useState<any>(null),[loading,setLoading]=useState(false),[account,setAccount]=useState<Address|null>(null),[form,setForm]=useState(SAMPLES[0]),[error,setError]=useState("");
- async function connectWallet(){setError("");try{if(!window.ethereum)throw new Error("Install MetaMask or another EVM wallet.");const wc=createWalletClient({chain:arc,transport:custom(window.ethereum)});const[a]=await wc.requestAddresses();if(await wc.getChainId()!==arc.id)await window.ethereum.request({method:"wallet_switchEthereumChain",params:[{chainId:"0x13a2"}]});setAccount(a)}catch(e:any){setError(e?.shortMessage||e?.message||"Wallet connection failed.")}}
+ async function connectWallet(){setError("");try{if(!window.ethereum)throw new Error("Install MetaMask or another EVM wallet.");const wc=createWalletClient({chain:arc,transport:custom(window.ethereum)});const[a]=await wc.requestAddresses();if(await wc.getChainId()!==arc.id) await ensureArcNetwork(); setAccount(a)}catch(e:any){setError(e?.shortMessage||e?.message||"Wallet connection failed.")}}
  async function handleVerify(){setLoading(true);setError("");setResult(null);try{if(!PHARMATRACE_ADDRESS)throw new Error("The deployed PharmaTrace contract address is not configured.");const b=await publicClient.readContract({address:PHARMATRACE_ADDRESS,abi:registryAbi,functionName:"getBatch",args:[lookupId.trim()]});setResult((b as any).exists?{type:"found",data:b}:{type:"notfound"})}catch(e:any){setError(e?.shortMessage||e?.message||"Blockchain lookup failed.")}finally{setLoading(false)}}
- async function handleRegister(){setLoading(true);setError("");setResult(null);try{if(!PHARMATRACE_ADDRESS)throw new Error("Deploy the contract and set VITE_PHARMATRACE_ADDRESS first.");if(!window.ethereum)throw new Error("Install MetaMask or another EVM wallet.");const wc=createWalletClient({chain:arc,transport:custom(window.ethereum)});const[a]=await wc.requestAddresses();if(await wc.getChainId()!==arc.id)await window.ethereum.request({method:"wallet_switchEthereumChain",params:[{chainId:"0x13a2"}]});const ok=await publicClient.readContract({address:PHARMATRACE_ADDRESS,abi:registryAbi,functionName:"authorizedRegistrars",args:[a]});if(!ok)throw new Error("This wallet is not an authorized manufacturer/registrar.");const tx=await wc.writeContract({address:PHARMATRACE_ADDRESS,abi:registryAbi,functionName:"registerBatch",args:[form.batchId.trim(),form.drugName,form.manufacturer,form.manufactureDate,form.expiryDate,BigInt(form.quantity)],account:a,chain:arc});await publicClient.waitForTransactionReceipt({hash:tx});setResult({type:"registered",tx});setLookupId(form.batchId)}catch(e:any){setError(e?.shortMessage||e?.message||"Registration failed.")}finally{setLoading(false)}}
+ async function handleRegister(){setLoading(true);setError("");setResult(null);try{if(!PHARMATRACE_ADDRESS)throw new Error("Deploy the contract and set VITE_PHARMATRACE_ADDRESS first.");if(!window.ethereum)throw new Error("Install MetaMask or another EVM wallet.");const wc=createWalletClient({chain:arc,transport:custom(window.ethereum)});const[a]=await wc.requestAddresses();if(await wc.getChainId()!==arc.id) await ensureArcNetwork(); const ok=await publicClient.readContract({address:PHARMATRACE_ADDRESS,abi:registryAbi,functionName:"authorizedRegistrars",args:[a]});if(!ok)throw new Error("This wallet is not an authorized manufacturer/registrar.");const tx=await wc.writeContract({address:PHARMATRACE_ADDRESS,abi:registryAbi,functionName:"registerBatch",args:[form.batchId.trim(),form.drugName,form.manufacturer,form.manufactureDate,form.expiryDate,BigInt(form.quantity)],account:a,chain:arc});await publicClient.waitForTransactionReceipt({hash:tx});setResult({type:"registered",tx});setLookupId(form.batchId)}catch(e:any){setError(e?.shortMessage||e?.message||"Registration failed.")}finally{setLoading(false)}}
  return <div style={{minHeight:"100vh",background:"#07111f",color:"#e2e8f0",fontFamily:"Inter,system-ui,sans-serif",padding:20}}><div style={{maxWidth:760,margin:"0 auto"}}>
  <header style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:16}}><div><div style={{display:"flex",alignItems:"center",gap:10}}><span style={{fontSize:30}}>💊</span><h1 style={{color:"#14F195",margin:0,fontSize:25}}>PharmaTrace</h1></div><p style={{color:"#94a3b8",margin:"5px 0 0",fontSize:12}}>Drug provenance + USDC settlement · Arc Mainnet</p></div><button onClick={connectWallet} style={btn("#172033","#fff")}>{account?account.slice(0,6)+"…"+account.slice(-4):"Connect Wallet"}</button></header>
  <div style={{margin:"18px 0",padding:12,borderRadius:10,background:"#0d1b2d",border:"1px solid #20324b",fontSize:12}}><strong style={{color:"#14F195"}}>Arc Mainnet</strong> · Chain ID 5042 · Native gas: USDC {PHARMATRACE_ADDRESS&&<a href={explorerContract()} target="_blank" rel="noreferrer" style={{marginLeft:12,color:"#7dd3fc"}}>Contract ↗</a>}</div>
