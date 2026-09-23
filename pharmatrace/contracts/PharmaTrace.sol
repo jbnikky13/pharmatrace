@@ -39,6 +39,7 @@ contract PharmaTrace {
     modifier onlyRegistrar() { require(authorizedRegistrars[msg.sender], "NOT_REGISTRAR"); _; }
 
     constructor(address usdcToken) {
+        require(usdcToken != address(0), "INVALID_USDC");
         owner = msg.sender;
         usdc = usdcToken;
         authorizedRegistrars[msg.sender] = true;
