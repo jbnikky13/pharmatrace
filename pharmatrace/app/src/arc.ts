@@ -2,7 +2,7 @@ import { createPublicClient, createWalletClient, custom, http, type Address } fr
 import { arc } from "viem/chains";
 
 export const ARC_USDC = "0x3600000000000000000000000000000000000000" as Address;
-export const PHARMATRACE_ADDRESS = (import.meta.env.VITE_PHARMATRACE_ADDRESS || "") as Address;
+export const PHARMATRACE_ADDRESS = (import.meta.env.VITE_PHARMATRACE_ADDRESS || "0x6e6EeEAFcA49FD83400e2b03805006dFfC43C52E") as Address;
 
 export const publicClient = createPublicClient({
   chain: arc,
