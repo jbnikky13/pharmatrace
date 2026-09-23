@@ -63,4 +63,10 @@ jobs:
       - name: Deploy PharmaTrace to Arc Mainnet
         env:
           PRIVATE_KEY: ${{ secrets.ARC_DEPLOYER_PRIVATE_KEY }}
-        run: forge script script/DeployPharmaTrace.s.sol:DeployPharmaTrace --rpc-url arc --broadcast
+        run: |
+          test -n "$PRIVATE_KEY" || { echo "::error::ARC_DEPLOYER_PRIVATE_KEY is not configured for the arc-mainnet environment."; exit 1; }
+          case "$PRIVATE_KEY" in
+            0x*) ;;
+            *) echo "::error::ARC_DEPLOYER_PRIVATE_KEY must start with 0x."; exit 1 ;;
+          esac
+          forge script script/DeployPharmaTrace.s.sol:DeployPharmaTrace --rpc-url arc --broadcast
