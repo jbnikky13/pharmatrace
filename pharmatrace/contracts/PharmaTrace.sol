@@ -28,6 +28,15 @@ contract PharmaTrace {
     mapping(bytes32 => Batch) private batches;
     mapping(address => bool) public authorizedRegistrars;
 
+    struct HistoryEntry {
+        uint8 status;
+        address actor;
+        uint256 timestamp;
+        string reason;
+    }
+
+    mapping(bytes32 => HistoryEntry[]) private batchHistory;
+
     event RegistrarUpdated(address indexed account, bool authorized);
     event BatchRegistered(bytes32 indexed batchKey, string batchId, address indexed authority);
     event StatusUpdated(bytes32 indexed batchKey, uint8 status, address indexed actor);
@@ -69,11 +78,16 @@ contract PharmaTrace {
             batchId, drugName, manufacturer, manufactureDate, expiryDate,
             quantity, MANUFACTURED, msg.sender, msg.sender, block.timestamp, true
         );
+        batchHistory[batchKey].push(HistoryEntry(MANUFACTURED, msg.sender, block.timestamp, "Batch registered"));
         emit BatchRegistered(batchKey, batchId, msg.sender);
     }
 
     function getBatch(string calldata batchId) external view returns (Batch memory) {
         return batches[keccak256(bytes(batchId))];
+    }
+
+    function getBatchHistory(string calldata batchId) external view returns (HistoryEntry[] memory) {
+        return batchHistory[keccak256(bytes(batchId))];
     }
 
     function batchExists(string calldata batchId) external view returns (bool) {
@@ -86,6 +100,7 @@ contract PharmaTrace {
         require(msg.sender == batch.authority || msg.sender == batch.custodian || msg.sender == owner, "NOT_AUTHORIZED");
         require(_isValidStatus(status), "INVALID_STATUS");
         batch.status = status;
+        batchHistory[keccak256(bytes(batchId))].push(HistoryEntry(status, msg.sender, block.timestamp, "Status updated"));
         emit StatusUpdated(keccak256(bytes(batchId)), status, msg.sender);
     }
 
@@ -96,6 +111,7 @@ contract PharmaTrace {
         require(newCustodian != address(0), "INVALID_CUSTODIAN");
         address previous = batch.custodian;
         batch.custodian = newCustodian;
+        batchHistory[keccak256(bytes(batchId))].push(HistoryEntry(batch.status, msg.sender, block.timestamp, "Custody transferred"));
         emit CustodyTransferred(keccak256(bytes(batchId)), previous, newCustodian);
     }
 
@@ -104,6 +120,7 @@ contract PharmaTrace {
         require(batch.exists, "BATCH_NOT_FOUND");
         require(msg.sender == batch.authority || msg.sender == batch.custodian || msg.sender == owner, "NOT_AUTHORIZED");
         batch.status = FLAGGED;
+        batchHistory[keccak256(bytes(batchId))].push(HistoryEntry(FLAGGED, msg.sender, block.timestamp, reason));
         emit BatchFlagged(keccak256(bytes(batchId)), msg.sender, reason);
     }
 
