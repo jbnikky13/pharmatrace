@@ -29,6 +29,17 @@ contract PharmaTrace {
     mapping(address => bool) public authorizedRegistrars;
     mapping(address => bool) public manufacturerVerified;
 
+    struct ManufacturerApplication {
+        address wallet;
+        string companyName;
+        string licenseNumber;
+        string contactReference;
+        uint8 status; // 0 pending, 1 verified, 2 rejected
+        uint256 submittedAt;
+    }
+    mapping(address => ManufacturerApplication) public manufacturerApplications;
+    address[] private applicantWallets;
+
     struct HistoryEntry {
         uint8 status;
         address actor;
@@ -40,6 +51,8 @@ contract PharmaTrace {
 
     event RegistrarUpdated(address indexed account, bool authorized);
     event ManufacturerVerified(address indexed account, bool verified);
+    event ManufacturerApplicationSubmitted(address indexed account, string companyName, string licenseNumber);
+    event ManufacturerApplicationReviewed(address indexed account, bool approved);
     event BatchRegistered(bytes32 indexed batchKey, string batchId, address indexed authority);
     event StatusUpdated(bytes32 indexed batchKey, uint8 status, address indexed actor);
     event CustodyTransferred(bytes32 indexed batchKey, address indexed from, address indexed to);
@@ -57,6 +70,28 @@ contract PharmaTrace {
         emit RegistrarUpdated(msg.sender, true);
     }
 
+    function applyForManufacturer(string calldata companyName, string calldata licenseNumber, string calldata contactReference) external {
+        require(bytes(companyName).length > 1, "INVALID_COMPANY");
+        require(bytes(licenseNumber).length > 1, "INVALID_LICENSE");
+        ManufacturerApplication storage a = manufacturerApplications[msg.sender];
+        if (a.wallet == address(0)) applicantWallets.push(msg.sender);
+        a.wallet = msg.sender;
+        a.companyName = companyName;
+        a.licenseNumber = licenseNumber;
+        a.contactReference = contactReference;
+        a.status = 0;
+        a.submittedAt = block.timestamp;
+        emit ManufacturerApplicationSubmitted(msg.sender, companyName, licenseNumber);
+    }
+
+    function getManufacturerApplication(address account) external view returns (ManufacturerApplication memory) {
+        return manufacturerApplications[account];
+    }
+
+    function getApplicantWallets() external view returns (address[] memory) {
+        return applicantWallets;
+    }
+
     function setRegistrar(address account, bool authorized) external onlyOwner {
         require(account != address(0), "INVALID_REGISTRAR");
         authorizedRegistrars[account] = authorized;
@@ -69,6 +104,10 @@ contract PharmaTrace {
         authorizedRegistrars[account] = verified;
         emit ManufacturerVerified(account, verified);
         emit RegistrarUpdated(account, verified);
+        ManufacturerApplication storage a = manufacturerApplications[account];
+        a.wallet = account;
+        a.status = verified ? 1 : 2;
+        emit ManufacturerApplicationReviewed(account, verified);
     }
 
     function registerBatch(
