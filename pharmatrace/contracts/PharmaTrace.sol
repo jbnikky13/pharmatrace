@@ -107,13 +107,13 @@ contract PharmaTrace {
         emit BatchFlagged(keccak256(bytes(batchId)), msg.sender, reason);
     }
 
-    function recordSettlement(string calldata batchId, address payee, uint256 amount, bytes32 reference) external {
+    function recordSettlement(string calldata batchId, address payee, uint256 amount, bytes32 settlementReference) external {
         Batch storage batch = batches[keccak256(bytes(batchId))];
         require(batch.exists, "BATCH_NOT_FOUND");
         require(msg.sender == batch.custodian || msg.sender == batch.authority || msg.sender == owner, "NOT_AUTHORIZED");
         require(payee != address(0) && amount > 0, "INVALID_SETTLEMENT");
         require(IERC20(usdc).transferFrom(msg.sender, payee, amount), "USDC_TRANSFER_FAILED");
-        emit SettlementRecorded(keccak256(bytes(batchId)), msg.sender, payee, amount, reference);
+        emit SettlementRecorded(keccak256(bytes(batchId)), msg.sender, payee, amount, settlementReference);
     }
 
     function _isValidStatus(uint8 status) internal pure returns (bool) {
