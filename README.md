@@ -32,7 +32,9 @@ The `PharmaTrace` contract provides:
 
 ### Contract deployment
 
-**Arc Mainnet contract:** _pending deployment_
+**Arc Mainnet contract:** _pending deployment_  
+
+> **Grant submission status:** production code and CI are ready; the remaining launch-critical item is the live Arc Mainnet contract deployment and verified address.
 
 After deployment, set:
 
@@ -61,7 +63,7 @@ pharmatrace/
     └── .env.example
 ```
 
-The original Solana/Anchor prototype remains in the repository for migration history, but the active application path is now Arc/EVM.
+The repository contains the original Solana/Anchor prototype for migration history. The active production path is the Arc/EVM contract and React frontend.
 
 ## Local development
 
@@ -110,16 +112,16 @@ VITE_ARC_RPC_URL=https://rpc.mainnet.arc.io
 VITE_PHARMATRACE_ADDRESS=0xYOUR_PHARMATRACE_CONTRACT
 ```
 
-The frontend reads verification data directly from the Arc contract; it no longer uses the old browser-only `CHAIN_REGISTRY`.
+The frontend reads verification data directly from the Arc contract and uses the EIP-1193 wallet interface; it no longer depends on the old browser-only `CHAIN_REGISTRY`.
 
 ## Grant-ready roadmap
 
-1. Deploy and verify the PharmaTrace contract on Arc Testnet.
-2. Deploy the production contract to Arc Mainnet.
-3. Add the deployed address and explorer link to this README.
-4. Register controlled demo batches from an authorized wallet.
-5. Demonstrate public verification from an unconnected wallet.
-6. Demonstrate USDC settlement between supply-chain participants.
+1. Deploy and verify the production PharmaTrace contract on Arc Mainnet.
+2. Add the deployed contract address and explorer link to this README and the grant application.
+3. Register controlled demo batches from an authorized wallet.
+4. Demonstrate public verification from an unconnected wallet.
+5. Demonstrate custody/status updates and USDC settlement between supply-chain participants.
+6. Publish a live demo URL and a short end-to-end transaction walkthrough.
 7. Add event indexing and participant dashboards.
 8. Add QR/batch-label verification for consumers.
 
