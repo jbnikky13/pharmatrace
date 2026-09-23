@@ -1,4 +1,4 @@
-name: Deploy PharmaTrace to Arc Mainnet
+name: Prepare PharmaTrace Arc Mainnet Deployment
 
 on:
   workflow_dispatch:
@@ -7,9 +7,8 @@ permissions:
   contents: read
 
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
-    environment: arc-mainnet
     steps:
       - uses: actions/checkout@v4
       - uses: foundry-rs/foundry-toolchain@v1
@@ -17,17 +16,18 @@ jobs:
         run: |
           mkdir -p pharmatrace/lib
           git clone --depth 1 https://github.com/foundry-rs/forge-std pharmatrace/lib/forge-std
-      - name: Preflight Arc Mainnet
-        working-directory: pharmatrace
-        run: |
-          test "$(cast chain-id --rpc-url https://rpc.mainnet.arc.io)" = "5042"
-      - name: Build contract
+      - name: Verify Arc Mainnet
+        run: test "$(cast chain-id --rpc-url https://rpc.mainnet.arc.io)" = "5042"
+      - name: Build
         working-directory: pharmatrace
         run: forge build
-      - name: Deploy
+      - name: Create deployment artifact
         working-directory: pharmatrace
-        env:
-          PRIVATE_KEY: ${{ secrets.ARC_DEPLOYER_PRIVATE_KEY }}
         run: |
-          test -n "$PRIVATE_KEY"
-          forge script script/DeployPharmaTrace.s.sol:DeployPharmaTrace --rpc-url https://rpc.mainnet.arc.io --broadcast
+          forge inspect PharmaTrace abi > PharmaTrace.abi.json
+          forge inspect PharmaTrace bytecode > PharmaTrace.bytecode.txt
+          tar -czf pharmatrace-arc-deployment.tgz PharmaTrace.abi.json PharmaTrace.bytecode.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pharmatrace-arc-deployment
+          path: pharmatrace/pharmatrace-arc-deployment.tgz
