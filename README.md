@@ -32,9 +32,9 @@ The `PharmaTrace` contract provides:
 
 ### Contract deployment
 
-**Arc Mainnet contract:** _pending deployment_  
+**Arc Mainnet contract:** `0x6e6EeEAFcA49FD83400e2b03805006dFfC43C52E`  
 
-> **Grant submission status:** production code and CI are ready; the remaining launch-critical item is the live Arc Mainnet contract deployment and verified address.
+**Grant submission status:** the Arc Mainnet contract is deployed and the frontend supports wallet connection, batch registration for authorized registrars, and public on-chain verification.
 
 After deployment, set:
 
