@@ -34,6 +34,19 @@ jobs:
       - name: Build contracts
         run: forge build
 
+      - name: Export PharmaTrace deployment artifact
+        run: |
+          mkdir -p deployment-artifact
+          cp out/PharmaTrace.sol/PharmaTrace.json deployment-artifact/PharmaTrace.json
+          jq '{abi: .abi, bytecode: .bytecode.object, deployedBytecode: .deployedBytecode.object}' \
+            out/PharmaTrace.sol/PharmaTrace.json > deployment-artifact/PharmaTrace.artifact.json
+
+      - name: Upload PharmaTrace artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pharmatrace-contract-artifact
+          path: pharmatrace/deployment-artifact/
+
   deploy-mainnet:
     if: github.event_name == 'workflow_dispatch'
     needs: test
