@@ -9,6 +9,7 @@ on:
   pull_request:
     paths:
       - "pharmatrace/app/**"
+      - ".github/workflows/pharmatrace-app.yml"
 
 jobs:
   build:
@@ -22,6 +23,6 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: pharmatrace/app/package-lock.json
+          cache-dependency-path: pharmatrace/app/package.json
       - run: npm install
       - run: npm run build
