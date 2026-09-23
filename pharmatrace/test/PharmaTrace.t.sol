@@ -49,6 +49,22 @@ contract PharmaTraceTest is Test {
         registry.registerBatch("AFTER-VERIFY","Test Drug","Maker","2026-01-01","2028-01-01",10);
     }
 
+    function testManufacturerApplicationAndReview() public {
+        address applicant = address(0x8888);
+        vm.prank(applicant);
+        registry.applyForManufacturer("Acme Pharma Ltd", "NAFDAC-LIC-001", "contact-001");
+        (address wallet, string memory company, string memory license,, uint8 status,) = registry.manufacturerApplications(applicant);
+        assertEq(wallet, applicant);
+        assertEq(company, "Acme Pharma Ltd");
+        assertEq(license, "NAFDAC-LIC-001");
+        assertEq(status, 0);
+        registry.setManufacturerVerified(applicant, true);
+        assertTrue(registry.manufacturerVerified(applicant));
+        assertTrue(registry.authorizedRegistrars(applicant));
+        (, , , , uint8 reviewedStatus,) = registry.manufacturerApplications(applicant);
+        assertEq(reviewedStatus, 1);
+    }
+
     function testRegisterAndVerifyBatch() public {
         vm.prank(manufacturer);
         registry.registerBatch("NAFDAC04-2220","Amoxicillin 500mg Capsules","Emzor Pharmaceuticals Ltd","2026-01-10","2028-01-10",50000);
