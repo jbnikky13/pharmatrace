@@ -21,7 +21,7 @@ export const registryAbi = [
   {type:"function",name:"updateStatus",stateMutability:"nonpayable",inputs:[{name:"batchId",type:"string"},{name:"status",type:"uint8"}],outputs:[]},
   {type:"function",name:"flagBatch",stateMutability:"nonpayable",inputs:[{name:"batchId",type:"string"},{name:"reason",type:"string"}],outputs:[]},
   {type:"function",name:"authorizedRegistrars",stateMutability:"view",inputs:[{name:"account",type:"address"}],outputs:[{name:"",type:"bool"}]},
-  {type:"function",name:"getBatchHistory",stateMutability:"view",inputs:[{name:"batchId",type:"string"}],outputs:[{name:"history",type:"tuple[]",components:[{name:"batchId",type:"string"},{name:"status",type:"uint8"},{name:"actor",type:"address"},{name:"timestamp",type:"uint256"},{name:"reason",type:"string"}]}]},
+  {type:"function",name:"getBatchHistory",stateMutability:"view",inputs:[{name:"batchId",type:"string"}],outputs:[{name:"history",type:"tuple[]",components:[{name:"status",type:"uint8"},{name:"actor",type:"address"},{name:"timestamp",type:"uint256"},{name:"reason",type:"string"}]}]},
 ] as const;
 
 export async function connectArcWallet(): Promise<Address> {
@@ -39,7 +39,7 @@ export async function connectArcWallet(): Promise<Address> {
         params:[{
           chainId:"0x13b2",
           chainName:"Arc Mainnet",
-          nativeCurrency:{name:"USDC",symbol:"USDC",decimals:6},
+          nativeCurrency:{name:"USDC",symbol:"USDC",decimals:18},
           rpcUrls:[import.meta.env.VITE_ARC_RPC_URL || "https://rpc.mainnet.arc.io"],
           blockExplorerUrls:["https://explorer.arc.io"]
         }]
