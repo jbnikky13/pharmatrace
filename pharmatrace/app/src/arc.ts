@@ -39,7 +39,7 @@ export async function connectArcWallet(): Promise<Address> {
         params:[{
           chainId:"0x13b2",
           chainName:"Arc Mainnet",
-          nativeCurrency:{name:"USDC",symbol:"USDC",decimals:18},
+          nativeCurrency:{name:"USDC",symbol:"USDC",decimals:6},
           rpcUrls:[import.meta.env.VITE_ARC_RPC_URL || "https://rpc.mainnet.arc.io"],
           blockExplorerUrls:["https://explorer.arc.io"]
         }]
