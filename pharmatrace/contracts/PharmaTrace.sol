@@ -84,7 +84,7 @@ contract PharmaTrace {
         Batch storage batch = batches[keccak256(bytes(batchId))];
         require(batch.exists, "BATCH_NOT_FOUND");
         require(msg.sender == batch.authority || msg.sender == batch.custodian || msg.sender == owner, "NOT_AUTHORIZED");
-        require(status != 0, "INVALID_STATUS");
+        require(_isValidStatus(status), "INVALID_STATUS");
         batch.status = status;
         emit StatusUpdated(keccak256(bytes(batchId)), status, msg.sender);
     }
