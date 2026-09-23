@@ -68,7 +68,7 @@ contract PharmaTrace {
         string calldata manufactureDate,
         string calldata expiryDate,
         uint256 quantity
-    ) external onlyRegistrar returns (bytes32 batchKey) {
+    ) external returns (bytes32 batchKey) {
         require(bytes(batchId).length > 0, "EMPTY_BATCH_ID");
         require(quantity > 0, "INVALID_QUANTITY");
         batchKey = keccak256(bytes(batchId));
