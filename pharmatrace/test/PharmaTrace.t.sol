@@ -27,7 +27,26 @@ contract PharmaTraceTest is Test {
     function setUp() public {
         usdc = new MockUSDC();
         registry = new PharmaTrace(address(usdc));
-        registry.setRegistrar(manufacturer, true);
+        registry.setManufacturerVerified(manufacturer, true);
+    }
+
+    function testUnverifiedManufacturerCannotRegister() public {
+        address unverified = address(0x1234);
+        vm.prank(unverified);
+        vm.expectRevert("NOT_REGISTRAR");
+        registry.registerBatch("UNVERIFIED-1","Test Drug","Unknown Maker","2026-01-01","2028-01-01",10);
+    }
+
+    function testVerifiedManufacturerGetsAutomaticRegistrationRights() public {
+        address verified = address(0x5678);
+        vm.prank(verified);
+        vm.expectRevert("NOT_REGISTRAR");
+        registry.registerBatch("BEFORE-VERIFY","Test Drug","Maker","2026-01-01","2028-01-01",10);
+        registry.setManufacturerVerified(verified, true);
+        assertTrue(registry.manufacturerVerified(verified));
+        assertTrue(registry.authorizedRegistrars(verified));
+        vm.prank(verified);
+        registry.registerBatch("AFTER-VERIFY","Test Drug","Maker","2026-01-01","2028-01-01",10);
     }
 
     function testRegisterAndVerifyBatch() public {
