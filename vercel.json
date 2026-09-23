@@ -1,0 +1,6 @@
+{
+  "buildCommand": "cd pharmatrace/app && npm run build",
+  "outputDirectory": "pharmatrace/app/dist",
+  "installCommand": "cd pharmatrace/app && npm install",
+  "framework": "vite"
+}
