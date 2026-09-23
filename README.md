@@ -1,98 +1,131 @@
 # 💊 PharmaTrace
 
-> Onchain pharmaceutical batch provenance for Nigeria, migrating from the original Solana prototype to Circle's Arc EVM network.
+> **Onchain pharmaceutical provenance and USDC settlement for Nigeria, built on Arc.**
 
-## Phase 1 — Arc registry
+PharmaTrace lets authorized pharmaceutical participants register drug batches onchain, verify provenance from any phone, transfer custody through the supply chain, flag suspicious batches, and record USDC settlement events.
 
-PharmaTrace now has an Arc/EVM registry contract and an EIP-1193 frontend. The old browser-only registry and Solana self-transfer demo are no longer used by the application.
+## Current architecture
 
-### Phase 1 capabilities
+- **Network:** Arc Mainnet (EVM, chain ID 5042)
+- **Smart contract:** Solidity 0.8.24
+- **Frontend:** React + TypeScript + Vite
+- **Wallet:** EIP-1193 wallets such as MetaMask
+- **RPC:** `https://rpc.mainnet.arc.io`
+- **USDC:** Arc native USDC ERC-20 interface
+- **Explorer:** `https://explorer.arc.io`
 
-- Solidity `PharmaTraceRegistry`
-- Arc mainnet configuration
-- Chain ID `5042`
-- Direct onchain batch registration
-- Direct onchain batch verification
-- Batch status updates and flagging
-- Arc Explorer transaction links
-- Wallet connection through EIP-1193
-- No in-memory verification registry
-- No fake self-transfer as a registration transaction
+Arc uses USDC as its native gas token. The Arc ERC-20 interface for USDC is `0x3600000000000000000000000000000000000000`. The Arc documentation lists chain ID 5042, the mainnet RPC, and explorer. 
 
-### Arc network
+## What is onchain
 
-| Setting | Value |
-|---|---|
-| Network | Arc |
-| Chain ID | `5042` |
-| RPC | `https://rpc.mainnet.arc.io` |
-| Gas currency | USDC |
-| Explorer | `https://explorer.arc.io` |
+The `PharmaTrace` contract provides:
 
-Circle's documentation lists Arc's USDC contract as `0x3600000000000000000000000000000000000000`. Phase 1 does not transfer USDC; settlement is Phase 2.
+- Batch registration with NAFDAC batch IDs
+- Manufacturer/registrar authorization
+- Public batch verification
+- Supply-chain status updates
+- Custody transfer
+- Batch flagging
+- USDC settlement recording
+- Events suitable for indexing and analytics
+- Duplicate batch protection
 
-### Deploy the registry
+### Contract deployment
 
-From `pharmatrace/`:
+**Arc Mainnet contract:** _pending deployment_
 
-```bash
-forge build
-forge create contracts/PharmaTraceRegistry.sol:PharmaTraceRegistry \
-  --rpc-url https://rpc.mainnet.arc.io \
-  --private-key "$ARC_PRIVATE_KEY"
+After deployment, set:
+
+```text
+VITE_PHARMATRACE_ADDRESS=0x...
 ```
 
-For a rehearsal deployment, use Arc Testnet:
+and add the same address to the grant application.
+
+## Repository layout
+
+```text
+pharmatrace/
+├── contracts/
+│   └── PharmaTrace.sol
+├── script/
+│   └── DeployPharmaTrace.s.sol
+├── test/
+│   └── PharmaTrace.t.sol
+├── foundry.toml
+└── app/
+    ├── src/
+    │   ├── App.tsx
+    │   ├── arc.ts
+    │   └── main.tsx
+    └── .env.example
+```
+
+The original Solana/Anchor prototype remains in the repository for migration history, but the active application path is now Arc/EVM.
+
+## Local development
+
+### Smart contract
+
+Install Foundry, then:
 
 ```bash
-forge create contracts/PharmaTraceRegistry.sol:PharmaTraceRegistry \
+cd pharmatrace
+forge test -vvv
+forge build
+```
+
+Testnet deployment:
+
+```bash
+export PRIVATE_KEY=YOUR_TESTNET_DEPLOYER_KEY
+forge script script/DeployPharmaTrace.s.sol:DeployPharmaTrace \
   --rpc-url https://rpc.testnet.arc.io \
-  --private-key "$ARC_PRIVATE_KEY"
+  --broadcast
+```
+
+Mainnet deployment:
+
+```bash
+export PRIVATE_KEY=YOUR_MAINNET_DEPLOYER_KEY
+forge script script/DeployPharmaTrace.s.sol:DeployPharmaTrace \
+  --rpc-url https://rpc.mainnet.arc.io \
+  --broadcast
 ```
 
 Never commit a private key.
 
-### Configure the frontend
-
-Create `pharmatrace/app/.env.local`:
-
-```env
-VITE_PHARMATRACE_CONTRACT_ADDRESS=0xYOUR_DEPLOYED_CONTRACT
-```
-
-Then:
+### Frontend
 
 ```bash
 cd pharmatrace/app
 npm install
-npm run build
 npm run dev
 ```
 
-For Vercel, add `VITE_PHARMATRACE_CONTRACT_ADDRESS` as a project environment variable and redeploy.
+Create `.env.local`:
 
-### Architecture
-
-```
-Authorized manufacturer/operator
-          |
-          | registerBatch()
-          v
-   PharmaTraceRegistry
-          |
-          +---- Arc event logs
-          |
-          +---- verifyBatch()
-          |
-          v
-   Pharmacist / consumer
+```env
+VITE_ARC_RPC_URL=https://rpc.mainnet.arc.io
+VITE_PHARMATRACE_ADDRESS=0xYOUR_PHARMATRACE_CONTRACT
 ```
 
-### Security boundary
+The frontend reads verification data directly from the Arc contract; it no longer uses the old browser-only `CHAIN_REGISTRY`.
 
-Phase 1 uses a single contract owner for registration and status changes. This is intentionally minimal for the first deployment and is not the final multi-party authorization model.
+## Grant-ready roadmap
 
-Phase 2 will add USDC settlement, participant roles, stronger authorization and production monitoring.
+1. Deploy and verify the PharmaTrace contract on Arc Testnet.
+2. Deploy the production contract to Arc Mainnet.
+3. Add the deployed address and explorer link to this README.
+4. Register controlled demo batches from an authorized wallet.
+5. Demonstrate public verification from an unconnected wallet.
+6. Demonstrate USDC settlement between supply-chain participants.
+7. Add event indexing and participant dashboards.
+8. Add QR/batch-label verification for consumers.
+
+## Important product boundary
+
+A missing onchain record is **not by itself proof that a medicine is counterfeit**. PharmaTrace is a provenance and verification layer; regulatory, packaging, seller, and laboratory checks remain important.
 
 ## License
 
