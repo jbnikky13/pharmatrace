@@ -27,6 +27,7 @@ contract PharmaTrace {
 
     mapping(bytes32 => Batch) private batches;
     mapping(address => bool) public authorizedRegistrars;
+    mapping(address => bool) public manufacturerVerified;
 
     struct HistoryEntry {
         uint8 status;
@@ -38,6 +39,7 @@ contract PharmaTrace {
     mapping(bytes32 => HistoryEntry[]) private batchHistory;
 
     event RegistrarUpdated(address indexed account, bool authorized);
+    event ManufacturerVerified(address indexed account, bool verified);
     event BatchRegistered(bytes32 indexed batchKey, string batchId, address indexed authority);
     event StatusUpdated(bytes32 indexed batchKey, uint8 status, address indexed actor);
     event CustodyTransferred(bytes32 indexed batchKey, address indexed from, address indexed to);
@@ -59,6 +61,14 @@ contract PharmaTrace {
         require(account != address(0), "INVALID_REGISTRAR");
         authorizedRegistrars[account] = authorized;
         emit RegistrarUpdated(account, authorized);
+    }
+
+    function setManufacturerVerified(address account, bool verified) external onlyOwner {
+        require(account != address(0), "INVALID_MANUFACTURER");
+        manufacturerVerified[account] = verified;
+        authorizedRegistrars[account] = verified;
+        emit ManufacturerVerified(account, verified);
+        emit RegistrarUpdated(account, verified);
     }
 
     function registerBatch(
