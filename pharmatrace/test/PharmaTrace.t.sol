@@ -65,6 +65,19 @@ contract PharmaTraceTest is Test {
         assertEq(batch.status, registry.FLAGGED());
     }
 
+    function testInvalidStatusRejected() public {
+        vm.prank(manufacturer);
+        registry.registerBatch("STATUS-1","Test Drug","Maker","2026-01-01","2028-01-01",10);
+        vm.prank(manufacturer);
+        vm.expectRevert("INVALID_STATUS");
+        registry.updateStatus("STATUS-1", 5);
+    }
+
+    function testZeroUsdcRejected() public {
+        vm.expectRevert("INVALID_USDC");
+        new PharmaTrace(address(0));
+    }
+
     function testUSDCSettlement() public {
         usdc.mint(manufacturer, 100e6);
         vm.prank(manufacturer);
