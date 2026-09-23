@@ -1,0 +1,48 @@
+name: PharmaTrace Arc Contract
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "pharmatrace/contracts/**"
+      - "pharmatrace/test/**"
+      - "pharmatrace/script/**"
+      - "pharmatrace/foundry.toml"
+      - ".github/workflows/arc-contract.yml"
+  pull_request:
+    paths:
+      - "pharmatrace/contracts/**"
+      - "pharmatrace/test/**"
+      - "pharmatrace/script/**"
+      - "pharmatrace/foundry.toml"
+      - ".github/workflows/arc-contract.yml"
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: pharmatrace
+    steps:
+      - uses: actions/checkout@v4
+      - uses: foundry-rs/foundry-toolchain@v1
+      - run: forge test -vvv
+      - run: forge build
+
+  deploy-mainnet:
+    if: github.event_name == 'workflow_dispatch'
+    needs: test
+    runs-on: ubuntu-latest
+    environment: arc-mainnet
+    defaults:
+      run:
+        working-directory: pharmatrace
+    steps:
+      - uses: actions/checkout@v4
+      - uses: foundry-rs/foundry-toolchain@v1
+      - name: Deploy PharmaTrace to Arc Mainnet
+        env:
+          PRIVATE_KEY: ${{ secrets.ARC_DEPLOYER_PRIVATE_KEY }}
+        run: |
+          forge script script/DeployPharmaTrace.s.sol:DeployPharmaTrace --rpc-url arc --broadcast
