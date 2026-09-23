@@ -8,13 +8,14 @@ on:
       - "pharmatrace/test/**"
       - "pharmatrace/script/**"
       - "pharmatrace/foundry.toml"
-      - ".github/workflows/arc-contract.yml"
+      - "pharmatrace/.github/workflows/arc-contract.yml"
   pull_request:
     paths:
       - "pharmatrace/contracts/**"
       - "pharmatrace/test/**"
       - "pharmatrace/script/**"
       - "pharmatrace/foundry.toml"
+  workflow_dispatch:
 
 jobs:
   test:
@@ -29,7 +30,7 @@ jobs:
       - run: forge build
 
   deploy-mainnet:
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: github.event_name == 'workflow_dispatch'
     needs: test
     runs-on: ubuntu-latest
     environment: arc-mainnet
@@ -43,4 +44,4 @@ jobs:
         env:
           PRIVATE_KEY: ${{ secrets.ARC_DEPLOYER_PRIVATE_KEY }}
         run: |
-          forge script script/DeployPharmaTrace.s.sol:DeployPharmaTrace --rpc-url arc --broadcast
+          forge script script/DeployPharmaTrace.s.sol:DeployPharmaTrace             --rpc-url arc             --broadcast
