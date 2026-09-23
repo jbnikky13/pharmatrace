@@ -20,6 +20,10 @@ export const registryAbi = [
     {name:"manufactureDate",type:"string"},{name:"expiryDate",type:"string"},{name:"quantity",type:"uint256"}],outputs:[{name:"batchKey",type:"bytes32"}]},
   {type:"function",name:"updateStatus",stateMutability:"nonpayable",inputs:[{name:"batchId",type:"string"},{name:"status",type:"uint8"}],outputs:[]},
   {type:"function",name:"flagBatch",stateMutability:"nonpayable",inputs:[{name:"batchId",type:"string"},{name:"reason",type:"string"}],outputs:[]},
+  {type:"function",name:"applyForManufacturer",stateMutability:"nonpayable",inputs:[{name:"companyName",type:"string"},{name:"licenseNumber",type:"string"},{name:"contactReference",type:"string"}],outputs:[]},
+  {type:"function",name:"getManufacturerApplication",stateMutability:"view",inputs:[{name:"account",type:"address"}],outputs:[{name:"application",type:"tuple",components:[{name:"wallet",type:"address"},{name:"companyName",type:"string"},{name:"licenseNumber",type:"string"},{name:"contactReference",type:"string"},{name:"status",type:"uint8"},{name:"submittedAt",type:"uint256"}]}]},
+  {type:"function",name:"setManufacturerVerified",stateMutability:"nonpayable",inputs:[{name:"account",type:"address"},{name:"verified",type:"bool"}],outputs:[]},
+  {type:"function",name:"getApplicantWallets",stateMutability:"view",inputs:[],outputs:[{name:"",type:"address[]"}]},
   {type:"function",name:"authorizedRegistrars",stateMutability:"view",inputs:[{name:"account",type:"address"}],outputs:[{name:"",type:"bool"}]},
   {type:"function",name:"getBatchHistory",stateMutability:"view",inputs:[{name:"batchId",type:"string"}],outputs:[{name:"history",type:"tuple[]",components:[{name:"status",type:"uint8"},{name:"actor",type:"address"},{name:"timestamp",type:"uint256"},{name:"reason",type:"string"}]}]},
 ] as const;
