@@ -29,7 +29,22 @@ export async function connectArcWallet(): Promise<Address> {
   const [account] = await client.requestAddresses();
   const chainId = await client.getChainId();
   if (chainId !== arc.id) {
-    await window.ethereum.request({method:"wallet_switchEthereumChain",params:[{chainId:"0x13a2"}]});
+    try {
+      await window.ethereum.request({method:"wallet_switchEthereumChain",params:[{chainId:"0x13b2"}]});
+    } catch (switchError: any) {
+      if (switchError?.code !== 4902) throw switchError;
+      await window.ethereum.request({
+        method:"wallet_addEthereumChain",
+        params:[{
+          chainId:"0x13b2",
+          chainName:"Arc Mainnet",
+          nativeCurrency:{name:"USDC",symbol:"USDC",decimals:6},
+          rpcUrls:[import.meta.env.VITE_ARC_RPC_URL || "https://rpc.mainnet.arc.io"],
+          blockExplorerUrls:["https://explorer.arc.io"]
+        }]
+      });
+      await window.ethereum.request({method:"wallet_switchEthereumChain",params:[{chainId:"0x13b2"}]});
+    }
   }
   return account;
 }
