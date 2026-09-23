@@ -1,7 +1,8 @@
 export {};
-
 declare global {
   interface Window {
-    Buffer: typeof import('buffer').Buffer;
+    ethereum?: {
+      request: (args: { method: string; params?: unknown[] }) => Promise<any>;
+    };
   }
 }
