@@ -7,27 +7,63 @@ permissions:
   contents: read
 
 jobs:
-  build:
+  build-deployment-artifact:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: pharmatrace
     steps:
-      - uses: actions/checkout@v4
-      - uses: foundry-rs/foundry-toolchain@v1
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+
       - name: Install forge-std
         run: |
-          mkdir -p pharmatrace/lib
-          git clone --depth 1 https://github.com/foundry-rs/forge-std pharmatrace/lib/forge-std
+          mkdir -p lib/forge-std
+          git clone --depth 1 https://github.com/foundry-rs/forge-std lib/forge-std
+
       - name: Verify Arc Mainnet
-        run: test "$(cast chain-id --rpc-url https://rpc.mainnet.arc.io)" = "5042"
-      - name: Build
-        working-directory: pharmatrace
-        run: forge build
-      - name: Create deployment artifact
-        working-directory: pharmatrace
+        run: |
+          CHAIN_ID="$(cast chain-id --rpc-url https://rpc.mainnet.arc.io)"
+          test "$CHAIN_ID" = "5042"
+
+      - name: Build contracts
+        run: forge build --sizes
+
+      - name: Verify PharmaTrace artifact exists
+        run: |
+          test -f out/PharmaTrace.sol/PharmaTrace.json
+          test -s out/PharmaTrace.sol/PharmaTrace.json
+
+      - name: Extract deployment artifacts
         run: |
           forge inspect PharmaTrace abi > PharmaTrace.abi.json
           forge inspect PharmaTrace bytecode > PharmaTrace.bytecode.txt
-          tar -czf pharmatrace-arc-deployment.tgz PharmaTrace.abi.json PharmaTrace.bytecode.txt
-      - uses: actions/upload-artifact@v4
+          test -s PharmaTrace.bytecode.txt
+          printf '%s\n' "PharmaTrace constructor: address usdc" > PharmaTrace.deployment.txt
+          printf '%s\n' "Arc Mainnet chain ID: 5042" >> PharmaTrace.deployment.txt
+          printf '%s\n' "Arc USDC constructor: 0x3600000000000000000000000000000000000000" >> PharmaTrace.deployment.txt
+          sha256sum PharmaTrace.bytecode.txt PharmaTrace.abi.json > PharmaTrace.SHA256SUMS
+
+      - name: Package deployment artifact
+        run: |
+          mkdir -p deployment
+          cp PharmaTrace.abi.json PharmaTrace.bytecode.txt PharmaTrace.deployment.txt PharmaTrace.SHA256SUMS deployment/
+          tar -czf pharmatrace-arc-deployment.tgz -C deployment .
+          ls -lh pharmatrace-arc-deployment.tgz
+          cat PharmaTrace.SHA256SUMS
+
+      - name: Upload deployment artifact
+        uses: actions/upload-artifact@v4
         with:
           name: pharmatrace-arc-deployment
-          path: pharmatrace/pharmatrace-arc-deployment.tgz
+          path: |
+            pharmatrace/pharmatrace-arc-deployment.tgz
+            pharmatrace/PharmaTrace.bytecode.txt
+            pharmatrace/PharmaTrace.abi.json
+            pharmatrace/PharmaTrace.deployment.txt
+            pharmatrace/PharmaTrace.SHA256SUMS
+          if-no-files-found: error
+          retention-days: 7
