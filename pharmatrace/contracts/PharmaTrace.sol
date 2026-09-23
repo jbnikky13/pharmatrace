@@ -116,6 +116,10 @@ contract PharmaTrace {
         emit SettlementRecorded(keccak256(bytes(batchId)), msg.sender, payee, amount, reference);
     }
 
+    function _isValidStatus(uint8 status) internal pure returns (bool) {
+        return status >= MANUFACTURED && status <= DISPENSED || status == FLAGGED;
+    }
+
     function transferOwnership(address newOwner) external onlyOwner {
         require(newOwner != address(0), "INVALID_OWNER");
         owner = newOwner;
