@@ -33,7 +33,7 @@ contract PharmaTrace {
     event StatusUpdated(bytes32 indexed batchKey, uint8 status, address indexed actor);
     event CustodyTransferred(bytes32 indexed batchKey, address indexed from, address indexed to);
     event BatchFlagged(bytes32 indexed batchKey, address indexed actor, string reason);
-    event SettlementRecorded(bytes32 indexed batchKey, address indexed payer, address indexed payee, uint256 amount, bytes32 reference);
+    event SettlementRecorded(bytes32 indexed batchKey, address indexed payer, address indexed payee, uint256 amount, bytes32 settlementReference);
 
     modifier onlyOwner() { require(msg.sender == owner, "NOT_OWNER"); _; }
     modifier onlyRegistrar() { require(authorizedRegistrars[msg.sender], "NOT_REGISTRAR"); _; }
