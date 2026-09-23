@@ -25,7 +25,7 @@ jobs:
       run:
         working-directory: pharmatrace
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: foundry-rs/foundry-toolchain@v1
       - name: Install forge-std
         run: forge install foundry-rs/forge-std --no-commit
@@ -43,7 +43,7 @@ jobs:
       run:
         working-directory: pharmatrace
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: foundry-rs/foundry-toolchain@v1
       - name: Install forge-std
         run: forge install foundry-rs/forge-std --no-commit
