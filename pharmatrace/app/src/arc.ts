@@ -72,3 +72,17 @@ export async function writeRegistry(functionName: string, args: readonly unknown
 
 export const explorerTx = (tx:string) => `https://explorer.arc.io/tx/${tx}`;
 export const explorerContract = () => PHARMATRACE_ADDRESS ? `https://explorer.arc.io/address/${PHARMATRACE_ADDRESS}` : "";
+
+export const MIGRATION_ADDRESS = (import.meta.env.VITE_PHARMATRACE_MIGRATION_ADDRESS || "") as Address;
+
+export const migrationAbi = [
+  {type:"function",name:"getMigration",stateMutability:"view",inputs:[{name:"arcBatchKey",type:"bytes32"}],outputs:[{name:"migration",type:"tuple",components:[
+    {name:"arcBatchKey",type:"bytes32"},{name:"sourceProgram",type:"string"},{name:"sourceRecord",type:"string"},
+    {name:"sourceTransaction",type:"string"},{name:"sourceRecordHash",type:"bytes32"},{name:"migratedAt",type:"uint256"},
+    {name:"attestor",type:"address"},{name:"exists",type:"bool"}]}]},
+  {type:"function",name:"hasMigration",stateMutability:"view",inputs:[{name:"arcBatchKey",type:"bytes32"}],outputs:[{name:"",type:"bool"}]},
+  {type:"function",name:"recordMigration",stateMutability:"nonpayable",inputs:[
+    {name:"arcBatchKey",type:"bytes32"},{name:"sourceProgram",type:"string"},{name:"sourceRecord",type:"string"},
+    {name:"sourceTransaction",type:"string"},{name:"sourceRecordHash",type:"bytes32"}],outputs:[]},
+  {type:"function",name:"attestors",stateMutability:"view",inputs:[{name:"account",type:"address"}],outputs:[{name:"",type:"bool"}]},
+] as const;
