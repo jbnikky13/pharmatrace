@@ -73,7 +73,7 @@ export async function writeRegistry(functionName: string, args: readonly unknown
 export const explorerTx = (tx:string) => `https://explorer.arc.io/tx/${tx}`;
 export const explorerContract = () => PHARMATRACE_ADDRESS ? `https://explorer.arc.io/address/${PHARMATRACE_ADDRESS}` : "";
 
-export const MIGRATION_ADDRESS = (import.meta.env.VITE_PHARMATRACE_MIGRATION_ADDRESS || "") as Address;
+export const MIGRATION_ADDRESS = (import.meta.env.VITE_PHARMATRACE_MIGRATION_ADDRESS || "0x9957f91b25B2FE09C9399e74Ecb50fffF3d8A482") as Address;
 
 export const migrationAbi = [
   {type:"function",name:"getMigration",stateMutability:"view",inputs:[{name:"arcBatchKey",type:"bytes32"}],outputs:[{name:"migration",type:"tuple",components:[
