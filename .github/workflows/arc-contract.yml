@@ -7,6 +7,7 @@ on:
       - "pharmatrace/contracts/**"
       - "pharmatrace/test/**"
       - "pharmatrace/script/**"
+      - "pharmatrace/script/**"
       - "pharmatrace/foundry.toml"
       - ".github/workflows/arc-contract.yml"
       - "README.md"
