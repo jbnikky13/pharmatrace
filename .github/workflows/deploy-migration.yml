@@ -1,0 +1,27 @@
+name: PharmaTrace Migration Registry
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy-migration:
+    runs-on: ubuntu-latest
+    environment: arc-mainnet
+    defaults:
+      run:
+        working-directory: pharmatrace
+    steps:
+      - uses: actions/checkout@v5
+      - uses: foundry-rs/foundry-toolchain@v1
+      - name: Install forge-std
+        run: forge install foundry-rs/forge-std --no-commit
+      - name: Deploy migration registry to Arc Mainnet
+        env:
+          PRIVATE_KEY: ${{ secrets.ARC_DEPLOYER_PRIVATE_KEY }}
+        run: |
+          test -n "$PRIVATE_KEY" || { echo "::error::ARC_DEPLOYER_PRIVATE_KEY is not configured for the arc-mainnet environment."; exit 1; }
+          case "$PRIVATE_KEY" in
+            0x*) ;;
+            *) echo "::error::ARC_DEPLOYER_PRIVATE_KEY must start with 0x."; exit 1 ;;
+          esac
+          forge script script/DeployPharmaTraceMigration.s.sol:DeployPharmaTraceMigration --rpc-url arc --broadcast
