@@ -25,6 +25,7 @@ export const registryAbi = [
   {type:"function",name:"setManufacturerVerified",stateMutability:"nonpayable",inputs:[{name:"account",type:"address"},{name:"verified",type:"bool"}],outputs:[]},
   {type:"function",name:"getApplicantWallets",stateMutability:"view",inputs:[],outputs:[{name:"",type:"address[]"}]},
   {type:"function",name:"owner",stateMutability:"view",inputs:[],outputs:[{name:"",type:"address"}]},
+  {type:"function",name:"manufacturerVerified",stateMutability:"view",inputs:[{name:"account",type:"address"}],outputs:[{name:"",type:"bool"}]},
   {type:"function",name:"authorizedRegistrars",stateMutability:"view",inputs:[{name:"account",type:"address"}],outputs:[{name:"",type:"bool"}]},
   {type:"function",name:"getBatchHistory",stateMutability:"view",inputs:[{name:"batchId",type:"string"}],outputs:[{name:"history",type:"tuple[]",components:[{name:"status",type:"uint8"},{name:"actor",type:"address"},{name:"timestamp",type:"uint256"},{name:"reason",type:"string"}]}]},
 ] as const;
