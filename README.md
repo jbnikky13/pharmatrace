@@ -139,3 +139,7 @@ Manufacturers apply with a wallet and business/licence reference. The contract o
 
 
 <!-- [deploy-arc] Harden registration authorization: verified manufacturers only -->
+
+
+## Deployment gate — 2026-09-24T06:13:50.560Z
+Final verified-manufacturer authorization and trace-control hardening is ready for Arc Mainnet deployment.
