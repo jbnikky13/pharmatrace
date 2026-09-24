@@ -136,3 +136,6 @@ MIT
 
 ### Manufacturer onboarding
 Manufacturers apply with a wallet and business/licence reference. The contract owner reviews the application; approval automatically grants registration rights. Public batch verification remains permissionless.
+
+
+<!-- [deploy-arc] Harden registration authorization: verified manufacturers only -->
