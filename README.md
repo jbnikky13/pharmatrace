@@ -4,6 +4,26 @@
 
 PharmaTrace lets authorized pharmaceutical participants register drug batches onchain, verify provenance from any phone, transfer custody through the supply chain, flag suspicious batches, and record USDC settlement events.
 
+## Project history
+
+### Phase 1 — Solana / Anchor prototype
+
+PharmaTrace began as a Solana/Anchor prototype exploring onchain pharmaceutical batch provenance. The original implementation modeled batch identifiers, drug information, manufacturer data, dates, quantities, status, and authority controls.
+
+The Solana implementation remains in the repository as development history and documents the original provenance model.
+
+### Phase 2 — Arc Mainnet
+
+The project evolved from the Solana prototype into the current EVM-based production implementation on Arc Mainnet.
+
+The Arc implementation introduced manufacturer onboarding, owner approval, verified manufacturer wallets, public verification, custody and distribution tracing, pharmacy/dispensed states, batch flagging, USDC settlement recording, contract-level authorization, duplicate protection, and automated CI/deployment.
+
+The Arc implementation is the current production path. The Solana code is retained as historical context; PharmaTrace does not claim that every historical Solana record was automatically bridged to Arc.
+
+### Phase 3 — Production hardening
+
+The project was subsequently hardened with persistent approval state, authorization regression coverage, EIP-1193 wallet handling, controlled deployment workflows, and frontend/contract CI.
+
 ## Current architecture
 
 - **Network:** Arc Mainnet (EVM, chain ID 5042)
@@ -113,6 +133,41 @@ VITE_PHARMATRACE_ADDRESS=0xYOUR_PHARMATRACE_CONTRACT
 ```
 
 The frontend reads verification data directly from the Arc contract and uses the EIP-1193 wallet interface; it no longer depends on the old browser-only `CHAIN_REGISTRY`.
+
+## Solana → Arc development history
+
+The project should be understood as an evolution of its architecture:
+
+```
+Solana / Anchor prototype
+        ↓
+Original provenance model
+        ↓
+Architecture evolution
+        ↓
+Arc / EVM production implementation
+        ↓
+Expanded provenance + authorization + settlement
+```
+
+A separate Arc migration-attestation registry is deployed at:
+
+**0x9957f91b25B2FE09C9399e74Ecb50fffF3d8A482**
+
+This registry is an optional provenance-history mechanism. It does not mean that existing Solana records have automatically been migrated to Arc.
+
+## v1.0.0 grant readiness
+
+The production implementation now covers the core provenance workflow, authorization, tracing, settlement, security hardening, and automated testing/deployment.
+
+Before tagging `v1.0.0`, the remaining work is release validation and evidence:
+
+1. Run the complete contract test suite.
+2. Run the production frontend build.
+3. Verify the live Arc contract and frontend configuration.
+4. Capture relevant Arc transaction/explorer evidence.
+5. Perform the final grant-readiness audit.
+6. Tag and publish `v1.0.0`.
 
 ## Grant-ready roadmap
 
