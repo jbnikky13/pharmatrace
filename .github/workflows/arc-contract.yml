@@ -9,6 +9,7 @@ on:
       - "pharmatrace/script/**"
       - "pharmatrace/foundry.toml"
       - ".github/workflows/arc-contract.yml"
+      - "README.md"
   pull_request:
     paths:
       - "pharmatrace/contracts/**"
