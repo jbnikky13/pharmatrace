@@ -32,9 +32,9 @@ The `PharmaTrace` contract provides:
 
 ### Contract deployment
 
-**Arc Mainnet contract:** `0x6e6EeEAFcA49FD83400e2b03805006dFfC43C52E`  
+**Arc Mainnet contract:** `0x41aBE791Cb924dBf5F4f2776c664491058eE1848`  
 
-**Grant submission status:** the Arc Mainnet contract is deployed and the frontend supports wallet connection, batch registration for authorized registrars, and public on-chain verification.
+**Production status:** the final Arc Mainnet contract is deployed; manufacturer onboarding, owner-only approval, verified-manufacturer registration, public verification, distribution tracing, and batch flagging are implemented.
 
 After deployment, set:
 
@@ -134,15 +134,49 @@ A missing onchain record is **not by itself proof that a medicine is counterfeit
 MIT
 
 
-### Manufacturer onboarding
-Manufacturers apply with a wallet and business/licence reference. The contract owner reviews the application; approval automatically grants registration rights. Public batch verification remains permissionless.
+## Manufacturer onboarding and authorization
 
+Manufacturers connect an EIP-1193 wallet and submit a business/licence reference. The application is recorded onchain and reviewed by the contract owner. Approval automatically marks the wallet as a verified manufacturer and gives it batch-registration rights.
 
-<!-- [deploy-arc] Harden registration authorization: verified manufacturers only -->
+The Owner Review section is only visible when the connected wallet matches the contract's `owner()` address.
 
+Registration is enforced by the smart contract: the contract owner or a verified manufacturer may register batches. An unverified wallet cannot bypass onboarding through a generic/manual registrar permission.
 
-## Deployment gate — 2026-09-24T06:13:50.560Z
-Final verified-manufacturer authorization and trace-control hardening is ready for Arc Mainnet deployment.
+## Public verification and trace controls
 
+Public batch verification is permissionless and does not require a wallet connection. Batch registration creates the initial **Manufactured** state automatically.
 
-Deployment gate re-armed.
+The verification interface is read-oriented. Mutable trace controls are limited to:
+
+- **In Distribution**
+- **At Pharmacy**
+- **Dispensed**
+- **Flag batch**
+
+These controls are available only to an appropriate authorized wallet: the batch authority, current custodian, or contract owner. Other users can inspect the full trace history but cannot modify it.
+
+## Current production contract
+
+`0x41aBE791Cb924dBf5F4f2776c664491058eE1848`
+
+Arc Mainnet · Chain ID `5042`
+
+## Security and deployment updates
+
+- Smart-contract authorization was hardened so verified-manufacturer status is the registration boundary.
+- Regression coverage was added to prevent a generic registrar permission from bypassing manufacturer verification.
+- Frontend wallet-provider handling was hardened for EIP-1193 wallets.
+- The deployment workflow was corrected so controlled deployment commits trigger the Arc deployment pipeline.
+- The frontend now uses the final production contract address.
+- Frontend and contract CI/deployment workflows are passing.
+
+## End-to-end acceptance flow
+
+1. Connect a wallet and submit a manufacturer application.
+2. Confirm the application remains pending after refresh.
+3. Connect the contract-owner wallet and approve the applicant.
+4. Reconnect the manufacturer wallet and register a test batch.
+5. Connect an unrelated, unverified wallet and confirm registration is rejected.
+6. Disconnect the wallet and publicly verify the batch.
+7. Use an authorized trace wallet to move the batch through distribution states.
+8. Flag a test batch and confirm the flag appears in its history.
