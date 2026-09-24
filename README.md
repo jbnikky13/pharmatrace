@@ -143,3 +143,6 @@ Manufacturers apply with a wallet and business/licence reference. The contract o
 
 ## Deployment gate — 2026-09-24T06:13:50.560Z
 Final verified-manufacturer authorization and trace-control hardening is ready for Arc Mainnet deployment.
+
+
+Deployment gate re-armed.
