@@ -33,20 +33,29 @@ contract PharmaTraceTest is Test {
     function testUnverifiedManufacturerCannotRegister() public {
         address unverified = address(0x1234);
         vm.prank(unverified);
-        vm.expectRevert("NOT_REGISTRAR");
+        vm.expectRevert("NOT_VERIFIED_MANUFACTURER");
         registry.registerBatch("UNVERIFIED-1","Test Drug","Unknown Maker","2026-01-01","2028-01-01",10);
     }
 
     function testVerifiedManufacturerGetsAutomaticRegistrationRights() public {
         address verified = address(0x5678);
         vm.prank(verified);
-        vm.expectRevert("NOT_REGISTRAR");
+        vm.expectRevert("NOT_VERIFIED_MANUFACTURER");
         registry.registerBatch("BEFORE-VERIFY","Test Drug","Maker","2026-01-01","2028-01-01",10);
         registry.setManufacturerVerified(verified, true);
         assertTrue(registry.manufacturerVerified(verified));
         assertTrue(registry.authorizedRegistrars(verified));
         vm.prank(verified);
         registry.registerBatch("AFTER-VERIFY","Test Drug","Maker","2026-01-01","2028-01-01",10);
+    }
+
+    function testManualRegistrarGrantCannotBypassManufacturerVerification() public {
+        address manual = address(0x9999);
+        registry.setRegistrar(manual, true);
+        assertTrue(registry.authorizedRegistrars(manual));
+        vm.prank(manual);
+        vm.expectRevert("NOT_VERIFIED_MANUFACTURER");
+        registry.registerBatch("MANUAL-BYPASS","Test Drug","Maker","2026-01-01","2028-01-01",10);
     }
 
     function testManufacturerApplicationAndReview() public {
