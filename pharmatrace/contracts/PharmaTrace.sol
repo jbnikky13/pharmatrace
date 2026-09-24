@@ -60,7 +60,7 @@ contract PharmaTrace {
     event SettlementRecorded(bytes32 indexed batchKey, address indexed payer, address indexed payee, uint256 amount, bytes32 settlementReference);
 
     modifier onlyOwner() { require(msg.sender == owner, "NOT_OWNER"); _; }
-    modifier onlyRegistrar() { require(authorizedRegistrars[msg.sender], "NOT_REGISTRAR"); _; }
+    modifier onlyRegistrar() { require(msg.sender == owner || manufacturerVerified[msg.sender], "NOT_VERIFIED_MANUFACTURER"); _; }
 
     constructor(address usdcToken) {
         require(usdcToken != address(0), "INVALID_USDC");
